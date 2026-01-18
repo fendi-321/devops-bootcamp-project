@@ -2,6 +2,13 @@
 # Optional/bonus: publish Grafana via Cloudflare Tunnel only.
 # This role is a placeholder and will not do anything unless a token is provided.
 
+# Users sometimes paste the *whole* install command from Cloudflare (e.g.
+# `cloudflared service install <TOKEN>`). Cloudflared expects ONLY the token.
+- name: Normalize tunnel token (accept token-only or full command)
+  ansible.builtin.set_fact:
+    cloudflared_token_clean: "{{ (cloudflared_tunnel_token | trim).split() | last }}"
+  when: cloudflared_tunnel_token | length > 0
+
 - name: Skip Cloudflare Tunnel setup if token is not provided
   ansible.builtin.debug:
     msg: "cloudflared_tunnel_token is empty; skipping cloudflared setup."
@@ -15,8 +22,24 @@
     apt-get install -y cloudflared
   when: cloudflared_tunnel_token | length > 0
 
-- name: Configure cloudflared as a service using token
-  ansible.builtin.command:
-    cmd: cloudflared service install {{ cloudflared_tunnel_token }}
+- name: Validate cloudflared token looks like base64 (best-effort)
+  ansible.builtin.assert:
+    that:
+      - cloudflared_token_clean is match('^[A-Za-z0-9+/=_-]+$')
+    fail_msg: >-
+      cloudflared_tunnel_token does not look like a valid token.
+      Paste ONLY the token value from Cloudflare (not the whole command).
+      Current value starts with: {{ cloudflared_tunnel_token[:40] }}
   when: cloudflared_tunnel_token | length > 0
 
+- name: Configure cloudflared as a service using token
+  ansible.builtin.command:
+    cmd: cloudflared service install {{ cloudflared_token_clean }}
+  when: cloudflared_tunnel_token | length > 0
+
+- name: Ensure cloudflared service is enabled and started
+  ansible.builtin.service:
+    name: cloudflared
+    state: started
+    enabled: true
+  when: cloudflared_tunnel_token | length > 0
