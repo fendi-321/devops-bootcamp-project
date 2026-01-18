@@ -36,6 +36,15 @@ resource "aws_security_group" "devops_public_sg" {
     cidr_blocks = [local.vpc_cidr]
   }
 
+  # Allow Prometheus (on monitoring server in private subnet) to scrape node_exporter on the web server.
+  ingress {
+    description = "Node exporter from VPC"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = [local.vpc_cidr]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

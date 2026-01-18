@@ -5,6 +5,28 @@
     state: directory
     mode: "0755"
 
+- name: Ensure grafana provisioning directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /opt/monitoring/grafana/provisioning/datasources
+    - /opt/monitoring/grafana/provisioning/dashboards
+    - /opt/monitoring/grafana/dashboards
+
+- name: Copy Grafana datasource provisioning
+  ansible.builtin.copy:
+    src: grafana/provisioning/datasources/datasource.yml
+    dest: /opt/monitoring/grafana/provisioning/datasources/datasource.yml
+    mode: "0644"
+
+- name: Copy Grafana dashboard provisioning
+  ansible.builtin.copy:
+    src: grafana/provisioning/dashboards/dashboard.yml
+    dest: /opt/monitoring/grafana/provisioning/dashboards/dashboard.yml
+    mode: "0644"
+
 - name: Render Prometheus config
   ansible.builtin.template:
     src: prometheus.yml.j2
@@ -18,12 +40,20 @@
   failed_when: false
   changed_when: "rm_prom.rc == 0"
 
+- name: Ensure monitoring docker network exists
+  ansible.builtin.command:
+    cmd: docker network create monitoring
+  register: net_create
+  failed_when: false
+  changed_when: "net_create.rc == 0"
+
 - name: Run Prometheus container
   ansible.builtin.command:
     cmd: >-
       docker run -d --name prometheus --restart unless-stopped
       -p 9090:9090
       -v /opt/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      --network monitoring
       prom/prometheus:latest
   register: prom_run
   changed_when: "prom_run.rc == 0"
@@ -40,7 +70,9 @@
     cmd: >-
       docker run -d --name grafana --restart unless-stopped
       -p 3000:3000
+      -v /opt/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      -v /opt/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      --network monitoring
       grafana/grafana:latest
   register: graf_run
   changed_when: "graf_run.rc == 0"
-
