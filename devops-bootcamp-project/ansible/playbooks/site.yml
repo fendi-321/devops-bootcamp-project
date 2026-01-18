@@ -2,6 +2,9 @@
 - name: Configure Web Server
   hosts: web
   become: true
+  vars_files:
+    # Keep vars in a single place regardless of where inventory/playbook live.
+    - ../group_vars/all.yml
   roles:
     - docker
     - node_exporter
@@ -10,8 +13,9 @@
 - name: Configure Monitoring Server
   hosts: monitoring
   become: true
+  vars_files:
+    - ../group_vars/all.yml
   roles:
     - docker
     - monitoring_stack
     - cloudflared
-
