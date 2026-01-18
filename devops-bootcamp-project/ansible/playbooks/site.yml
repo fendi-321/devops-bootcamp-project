@@ -1,0 +1,17 @@
+---
+- name: Configure Web Server
+  hosts: web
+  become: true
+  roles:
+    - docker
+    - node_exporter
+    - web_app
+
+- name: Configure Monitoring Server
+  hosts: monitoring
+  become: true
+  roles:
+    - docker
+    - monitoring_stack
+    - cloudflared
+

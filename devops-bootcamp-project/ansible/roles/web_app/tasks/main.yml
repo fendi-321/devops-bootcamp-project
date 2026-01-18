@@ -1,0 +1,42 @@
+---
+- name: Ensure app directory exists
+  ansible.builtin.file:
+    path: /opt/{{ app_name }}
+    state: directory
+    mode: "0755"
+
+- name: Clone application repository
+  ansible.builtin.git:
+    repo: "{{ app_repo_url }}"
+    dest: /opt/{{ app_name }}/src
+    version: main
+    force: true
+
+- name: Login to ECR (when using ECR image)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    aws ecr get-login-password --region {{ aws_region | default('ap-southeast-1') }} \
+      | docker login --username AWS --password-stdin {{ app_ecr_image.split('/')[0] }}
+  args:
+    executable: /bin/bash
+  when: use_ecr_image | default(false)
+
+- name: Build Docker image
+  ansible.builtin.command:
+    cmd: docker build -t {{ app_name }}:latest /opt/{{ app_name }}/src
+  register: build_result
+  changed_when: "'Successfully built' in build_result.stdout or 'writing image sha256' in build_result.stdout"
+  when: not (use_ecr_image | default(false))
+
+- name: Stop existing container if present
+  ansible.builtin.command:
+    cmd: docker rm -f {{ app_name }}
+  register: rm_result
+  failed_when: false
+  changed_when: "rm_result.rc == 0"
+
+- name: Run application container on port 80
+  ansible.builtin.command:
+    cmd: docker run -d --name {{ app_name }} --restart unless-stopped -p 80:{{ app_port }} {{ (use_ecr_image | default(false)) | ternary(app_ecr_image, app_name ~ ':latest') }}
+  register: run_result
+  changed_when: "run_result.rc == 0"

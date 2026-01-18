@@ -1,0 +1,17 @@
+// Copy this file to `backend.tf` when you are ready to use remote state.
+// IMPORTANT:
+// 1) Create the S3 bucket first (bootstrap)
+// 2) Then run: terraform init -reconfigure
+//
+// Bucket requirement (from Task 1):
+// - Name: devops-bootcamp-terraform-yourname (must be globally unique)
+// - Region: ap-southeast-1
+
+terraform {
+  backend "s3" {
+    bucket = "devops-bootcamp-terraform-yourname" // CHANGE ME
+    key    = "state/terraform.tfstate"
+    region = "ap-southeast-1"
+  }
+}
+

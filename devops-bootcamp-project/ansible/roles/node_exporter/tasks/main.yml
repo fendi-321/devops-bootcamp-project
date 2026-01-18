@@ -1,0 +1,19 @@
+---
+- name: Stop existing node_exporter container if present
+  ansible.builtin.command:
+    cmd: docker rm -f node-exporter
+  register: rm_ne
+  failed_when: false
+  changed_when: "rm_ne.rc == 0"
+
+- name: Run node_exporter container
+  ansible.builtin.command:
+    cmd: >-
+      docker run -d --name node-exporter --restart unless-stopped
+      -p {{ web_node_exporter_port }}:9100
+      --pid="host"
+      --net="host"
+      quay.io/prometheus/node-exporter:latest
+  register: ne_run
+  changed_when: "ne_run.rc == 0"
+

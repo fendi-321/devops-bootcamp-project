@@ -1,0 +1,15 @@
+---
+app_repo_url: "https://github.com/fendi-321/lab-final-project"
+app_name: "my-devops-project"
+app_port: 80
+
+# Optional: deploy by pulling the image from ECR instead of building on the web server.
+# Set use_ecr_image=true and fill app_ecr_image after you push the image.
+use_ecr_image: false
+app_ecr_image: ""
+
+# Prometheus will scrape node_exporter running on the web server.
+web_node_exporter_port: 9100
+
+# Cloudflare tunnel token (optional/bonus). Leave empty until you create a tunnel.
+cloudflared_tunnel_token: ""

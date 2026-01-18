@@ -1,0 +1,46 @@
+---
+- name: Ensure monitoring directory exists
+  ansible.builtin.file:
+    path: /opt/monitoring
+    state: directory
+    mode: "0755"
+
+- name: Render Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /opt/monitoring/prometheus.yml
+    mode: "0644"
+
+- name: Stop existing Prometheus container if present
+  ansible.builtin.command:
+    cmd: docker rm -f prometheus
+  register: rm_prom
+  failed_when: false
+  changed_when: "rm_prom.rc == 0"
+
+- name: Run Prometheus container
+  ansible.builtin.command:
+    cmd: >-
+      docker run -d --name prometheus --restart unless-stopped
+      -p 9090:9090
+      -v /opt/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      prom/prometheus:latest
+  register: prom_run
+  changed_when: "prom_run.rc == 0"
+
+- name: Stop existing Grafana container if present
+  ansible.builtin.command:
+    cmd: docker rm -f grafana
+  register: rm_graf
+  failed_when: false
+  changed_when: "rm_graf.rc == 0"
+
+- name: Run Grafana container
+  ansible.builtin.command:
+    cmd: >-
+      docker run -d --name grafana --restart unless-stopped
+      -p 3000:3000
+      grafana/grafana:latest
+  register: graf_run
+  changed_when: "graf_run.rc == 0"
+

@@ -1,0 +1,22 @@
+---
+# Optional/bonus: publish Grafana via Cloudflare Tunnel only.
+# This role is a placeholder and will not do anything unless a token is provided.
+
+- name: Skip Cloudflare Tunnel setup if token is not provided
+  ansible.builtin.debug:
+    msg: "cloudflared_tunnel_token is empty; skipping cloudflared setup."
+  when: cloudflared_tunnel_token | length == 0
+
+- name: Install cloudflared (only when token provided)
+  ansible.builtin.shell: |
+    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | gpg --dearmor -o /usr/share/keyrings/cloudflare-main.gpg
+    echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(. /etc/os-release && echo $VERSION_CODENAME) main" > /etc/apt/sources.list.d/cloudflared.list
+    apt-get update
+    apt-get install -y cloudflared
+  when: cloudflared_tunnel_token | length > 0
+
+- name: Configure cloudflared as a service using token
+  ansible.builtin.command:
+    cmd: cloudflared service install {{ cloudflared_tunnel_token }}
+  when: cloudflared_tunnel_token | length > 0
+
