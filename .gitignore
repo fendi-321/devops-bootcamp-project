@@ -18,3 +18,12 @@ terraform.rc
 # Ansible
 *.retry
 
+# Project artifacts (task files, bucket cleanup, etc.)
+Task *.txt
+task*.txt
+bucket_versions.json
+delete_*.json
+devops-bootcamp-project.zip
+nul
+*.docx
+

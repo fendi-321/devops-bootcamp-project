@@ -10,7 +10,6 @@
   ansible.builtin.command:
     cmd: >-
       docker run -d --name node-exporter --restart unless-stopped
-      -p {{ web_node_exporter_port | default(9100) }}:9100
       --pid="host"
       --net="host"
       quay.io/prometheus/node-exporter:latest
